@@ -14,6 +14,13 @@ pub fn new(size: Int) -> Registers {
   |> Registers
 }
 
+pub fn from_list(values: List(Int)) -> Registers {
+  values
+  |> list.index_map(fn(value, idx) { #(idx + 1, value) })
+  |> dict.from_list
+  |> Registers
+}
+
 pub fn write(regs: Registers, addr: Int, value: Int) -> Result(Registers, Nil) {
   case regs.regs |> dict.has_key(addr) {
     True -> Ok(regs.regs |> dict.insert(addr, value) |> Registers)

@@ -29,6 +29,7 @@ pub fn main() {
 type Model {
   Model(
     lines: List(String),
+    initial_regs: List(Int),
     rt: runtime.Runtime,
     error: option.Option(runtime.RuntimeError),
     history: queue.Queue(runtime.Runtime),
@@ -36,13 +37,20 @@ type Model {
 }
 
 fn init(_flags) -> Model {
+  let initial_regs = [3, 4, 0, 0]
   let lines = ["jmp 4", "inc 1", "dec 2", "isz 2", "jmp 2", "stp"]
   let assert Ok(program) = compiler.compile(lines)
-  let regs = registers.new(4)
+  let regs = registers.from_list(initial_regs)
   let assert Ok(regs) = regs |> registers.write(1, 3)
   let assert Ok(regs) = regs |> registers.write(2, 4)
   let assert Ok(rt) = runtime.new(program, regs)
-  Model(lines, rt, option.None, queue.new())
+  Model(
+    lines: lines,
+    rt: rt,
+    error: option.None,
+    history: queue.new(),
+    initial_regs: initial_regs,
+  )
 }
 
 // UPDATE ----------------------------------------------------------------------
@@ -77,7 +85,12 @@ fn update(model: Model, msg: Msg) -> Model {
         Error(err) -> Model(..model, error: option.Some(err))
       }
     Reset ->
-      case model.rt |> runtime.set_pc(1) {
+      case
+        runtime.new(
+          model.rt |> runtime.get_program,
+          model.initial_regs |> registers.from_list,
+        )
+      {
         Ok(rt) ->
           Model(
             ..model,

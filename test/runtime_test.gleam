@@ -14,12 +14,7 @@ fn build_example() -> Runtime {
       instruction.Jmp(2),
       instruction.Stp,
     ])
-  let regs =
-    registers.new(2)
-    |> registers.write(1, 3)
-    |> should.be_ok
-    |> registers.write(2, 4)
-    |> should.be_ok
+  let regs = registers.from_list([3, 4])
   let assert Ok(rt) = runtime.new(program, regs)
   rt
 }

@@ -665,28 +665,6 @@ function sort(list, compare3) {
     return merge_all(sequences$1, new Ascending(), compare3);
   }
 }
-function tail_recursive_range(loop$start, loop$stop, loop$acc) {
-  while (true) {
-    let start4 = loop$start;
-    let stop = loop$stop;
-    let acc = loop$acc;
-    let $ = compare2(start4, stop);
-    if ($ instanceof Eq) {
-      return prepend(stop, acc);
-    } else if ($ instanceof Gt) {
-      loop$start = start4;
-      loop$stop = stop + 1;
-      loop$acc = prepend(stop, acc);
-    } else {
-      loop$start = start4;
-      loop$stop = stop - 1;
-      loop$acc = prepend(stop, acc);
-    }
-  }
-}
-function range(start4, stop) {
-  return tail_recursive_range(start4, stop, toList([]));
-}
 
 // build/dev/javascript/gleam_stdlib/gleam/result.mjs
 function map2(result, fun) {
@@ -2511,11 +2489,14 @@ var Registers = class extends CustomType {
     this.regs = regs;
   }
 };
-function new$5(size) {
-  let _pipe = range(1, size);
-  let _pipe$1 = map(_pipe, (idx) => {
-    return [idx, 0];
-  });
+function from_list2(values) {
+  let _pipe = values;
+  let _pipe$1 = index_map(
+    _pipe,
+    (value, idx) => {
+      return [idx + 1, value];
+    }
+  );
   let _pipe$2 = from_list(_pipe$1);
   return new Registers(_pipe$2);
 }
@@ -2627,7 +2608,7 @@ function set_pc(rt, addr) {
     return new Error(new InvalidAddress(addr));
   }
 }
-function new$6(program, registers) {
+function new$5(program, registers) {
   let _pipe = new Runtime(program, registers, new Paused(0));
   return set_pc(_pipe, 1);
 }
@@ -2636,6 +2617,9 @@ function get_pc(rt) {
 }
 function get_registers(rt) {
   return rt.registers;
+}
+function get_program(rt) {
+  return rt.program;
 }
 function next(rt, jump) {
   let $ = rt.pc;
@@ -2863,9 +2847,10 @@ function table2(data) {
 
 // build/dev/javascript/app/app.mjs
 var Model = class extends CustomType {
-  constructor(lines, rt, error, history) {
+  constructor(lines, initial_regs, rt, error, history) {
     super();
     this.lines = lines;
+    this.initial_regs = initial_regs;
     this.rt = rt;
     this.error = error;
     this.history = history;
@@ -2880,20 +2865,21 @@ var Step = class extends CustomType {
 var Run = class extends CustomType {
 };
 function init2(_) {
+  let initial_regs = toList([3, 4, 0, 0]);
   let lines = toList(["jmp 4", "inc 1", "dec 2", "isz 2", "jmp 2", "stp"]);
   let $ = compile(lines);
   if (!$.isOk()) {
     throw makeError(
       "assignment_no_match",
       "app",
-      40,
+      42,
       "init",
       "Assignment pattern did not match",
       { value: $ }
     );
   }
   let program = $[0];
-  let regs = new$5(4);
+  let regs = from_list2(initial_regs);
   let $1 = (() => {
     let _pipe = regs;
     return write(_pipe, 1, 3);
@@ -2902,7 +2888,7 @@ function init2(_) {
     throw makeError(
       "assignment_no_match",
       "app",
-      42,
+      44,
       "init",
       "Assignment pattern did not match",
       { value: $1 }
@@ -2917,26 +2903,26 @@ function init2(_) {
     throw makeError(
       "assignment_no_match",
       "app",
-      43,
+      45,
       "init",
       "Assignment pattern did not match",
       { value: $2 }
     );
   }
   let regs$2 = $2[0];
-  let $3 = new$6(program, regs$2);
+  let $3 = new$5(program, regs$2);
   if (!$3.isOk()) {
     throw makeError(
       "assignment_no_match",
       "app",
-      44,
+      46,
       "init",
       "Assignment pattern did not match",
       { value: $3 }
     );
   }
   let rt = $3[0];
-  return new Model(lines, rt, new None(), new$2());
+  return new Model(lines, initial_regs, rt, new None(), new$2());
 }
 function update2(model, msg) {
   if (msg instanceof Run) {
@@ -2976,10 +2962,16 @@ function update2(model, msg) {
       return model.withFields({ error: new Some(err) });
     }
   } else if (msg instanceof Reset) {
-    let $ = (() => {
-      let _pipe = model.rt;
-      return set_pc(_pipe, 1);
-    })();
+    let $ = new$5(
+      (() => {
+        let _pipe = model.rt;
+        return get_program(_pipe);
+      })(),
+      (() => {
+        let _pipe = model.initial_regs;
+        return from_list2(_pipe);
+      })()
+    );
     if ($.isOk()) {
       let rt = $[0];
       return model.withFields({
