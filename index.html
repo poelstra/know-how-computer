@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>KnowHowComputer</title>
+
+    <!-- Uncomment this if you add the TailwindCSS integration -->
+    <!-- <link rel="stylesheet" href="/priv/static/app.css> -->
+    <link
+      rel="stylesheet"
+      href="./build/dev/javascript/lustre_ui/priv/static/lustre-ui.css"
+    />
+    <script type="module" src="/priv/static/app.mjs"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.js"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+
+  <body>
+    <!-- <div id="editor" style="height: 500px; width: 100%"></div> -->
+    <div id="app"></div>
+  </body>
+  <script>
+    const editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    // editor.session.setMode("ace/mode/javascript");
+    editor.setOption("showLineNumbers", true);
+    editor.setOption("showGutter", true);
+  </script>
+</html>
