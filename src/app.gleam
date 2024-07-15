@@ -5,6 +5,7 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/queue
+import gleam/string
 import lustre
 import lustre/attribute
 import lustre/element.{type Element, text}
@@ -38,7 +39,16 @@ type Model {
 
 fn init(_flags) -> Model {
   let initial_regs = [3, 4, 0, 0]
-  let lines = ["jmp 4", "inc 1", "dec 2", "isz 2", "jmp 2", "stp"]
+  let source =
+    "
+    jmp 4
+    inc 1
+    dec 2
+    isz 2
+    jmp 2
+    stp
+    "
+  let lines = source |> string.trim |> string.split("\n")
   let assert Ok(program) = compiler.compile(lines)
   let regs = registers.from_list(initial_regs)
   let assert Ok(regs) = regs |> registers.write(1, 3)
