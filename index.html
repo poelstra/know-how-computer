@@ -13,21 +13,58 @@
       href="./build/dev/javascript/lustre_ui/priv/static/lustre-ui.css"
     />
     <script type="module" src="/priv/static/app.mjs"></script>
-    <script
+    <!-- <script
+      src="https://cdn.jsdelivr.net/gh/MarketingPipeline/Ace-Editor-Web-Component@1.0.2/dist/ace-editor-wc.min.js"
+      defer
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/MarketingPipeline/Ace-Editor-Web-Component@v1.0.2/dist/ace-editor-wc.min.css"
+    /> -->
+    <!-- <script
       src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.js"
       crossorigin="anonymous"
-    ></script>
+    ></script> -->
+    <style>
+      ol#editor {
+        font-family: monospace;
+        white-space: pre;
+        padding-left: 3rem;
+        list-style: decimal;
+      }
+      #editor li::marker {
+        font-family: monospace;
+        color: grey;
+      }
+      #editor li {
+        position: relative;
+      }
+      #editor li.error {
+        color: red;
+      }
+      #editor li.error::before {
+        content: "\274C"; /* cross */
+        color: red;
+        position: absolute;
+        left: -1rem; /* Adjust the position as needed */
+      }
+      #editor li.paused {
+        background-color: yellow;
+      }
+      #editor li.stopped {
+        background-color: lightgray;
+      }
+    </style>
   </head>
 
   <body>
-    <!-- <div id="editor" style="height: 500px; width: 100%"></div> -->
     <div id="app"></div>
   </body>
-  <script>
+  <!-- <script>
     const editor = ace.edit("editor");
     editor.setTheme("ace/theme/monokai");
     // editor.session.setMode("ace/mode/javascript");
     editor.setOption("showLineNumbers", true);
     editor.setOption("showGutter", true);
-  </script>
+  </script> -->
 </html>

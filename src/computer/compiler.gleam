@@ -66,3 +66,15 @@ fn parse_none(args: String, a) -> Result(a, CompileError) {
     _ -> Error(NoArgsExpected(args))
   }
 }
+
+pub fn compile_error_to_string(error: CompileError) -> String {
+  case error {
+    UnknownCommand(got) -> "UnknownCommand, got '" <> got <> "'"
+    NoArgsExpected(got) -> "NoArgsExpected, got '" <> got <> "'"
+    IntArgExpected(got) -> "IntArgExpected, got '" <> got <> "'"
+    RegisterNumberExpected(got) ->
+      "RegisterNumberExpected, got '" <> int.to_string(got) <> "'"
+    AddressExpected(got) ->
+      "AddressExpected, got '" <> int.to_string(got) <> "'"
+  }
+}

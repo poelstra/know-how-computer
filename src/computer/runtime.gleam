@@ -1,6 +1,7 @@
 import computer/instruction.{type Instruction}
 import computer/program.{type Program}
 import computer/registers.{type Registers}
+import gleam/bool
 import gleam/int
 
 pub opaque type Runtime {
@@ -47,12 +48,13 @@ pub fn get_program(rt: Runtime) -> Program {
   rt.program
 }
 
-pub fn run(rt: Runtime) -> Result(Runtime, RuntimeError) {
+pub fn run(rt: Runtime, max_iterations: Int) -> Result(Runtime, RuntimeError) {
+  use <- bool.guard(max_iterations <= 0, Ok(rt))
   case step(rt) {
     Ok(rt) ->
       case rt.pc {
         Stopped(_) -> Ok(rt)
-        _ -> run(rt)
+        _ -> run(rt, max_iterations - 1)
       }
     err -> err
   }

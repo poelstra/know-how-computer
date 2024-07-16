@@ -1,10 +1,13 @@
 import computer/compiler
 import computer/registers
 import computer/runtime
+import gleam/dynamic
 import gleam/int
+import gleam/io
 import gleam/list
-import gleam/option
+import gleam/option.{None, Some}
 import gleam/queue
+import gleam/result
 import gleam/string
 import lustre
 import lustre/attribute
@@ -14,7 +17,6 @@ import lustre/event
 import lustre/ui
 import lustre/ui/icon
 import ui/registers as ui_registers
-import ui/table
 
 // MAIN ------------------------------------------------------------------------
 
@@ -34,6 +36,7 @@ type Model {
     rt: runtime.Runtime,
     error: option.Option(runtime.RuntimeError),
     history: queue.Queue(runtime.Runtime),
+    compile_errors: List(compiler.CompileErrorInfo),
   )
 }
 
@@ -41,13 +44,13 @@ fn init(_flags) -> Model {
   let initial_regs = [3, 4, 0, 0]
   let source =
     "
-    jmp 4
-    inc 1
-    dec 2
-    isz 2
-    jmp 2
-    stp
-    "
+jmp 4
+inc 1
+dec 2
+isz 2
+jmp 2
+stp
+"
   let lines = source |> string.trim |> string.split("\n")
   let assert Ok(program) = compiler.compile(lines)
   let regs = registers.from_list(initial_regs)
@@ -57,9 +60,10 @@ fn init(_flags) -> Model {
   Model(
     lines: lines,
     rt: rt,
-    error: option.None,
+    error: None,
     history: queue.new(),
     initial_regs: initial_regs,
+    compile_errors: [],
   )
 }
 
@@ -70,19 +74,20 @@ pub opaque type Msg {
   Reset
   Step
   Run
+  LinesChanged(lines: List(String))
 }
 
 fn update(model: Model, msg: Msg) -> Model {
   case msg {
     Run ->
-      case model.rt |> runtime.run {
+      case model.rt |> runtime.run(100) {
         Ok(rt) ->
           Model(
             ..model,
             rt: rt,
             history: model.history |> queue.push_front(model.rt),
           )
-        Error(err) -> Model(..model, error: option.Some(err))
+        Error(err) -> Model(..model, error: Some(err))
       }
     Step ->
       case model.rt |> runtime.step {
@@ -92,7 +97,7 @@ fn update(model: Model, msg: Msg) -> Model {
             rt: rt,
             history: model.history |> queue.push_front(model.rt),
           )
-        Error(err) -> Model(..model, error: option.Some(err))
+        Error(err) -> Model(..model, error: Some(err))
       }
     Reset ->
       case
@@ -105,17 +110,34 @@ fn update(model: Model, msg: Msg) -> Model {
           Model(
             ..model,
             rt: rt,
-            error: option.None,
+            error: None,
             history: model.history |> queue.push_front(model.rt),
           )
-        Error(err) -> Model(..model, error: option.Some(err))
+        Error(err) -> Model(..model, error: Some(err))
       }
     Undo ->
       case model.history |> queue.pop_front() {
         Ok(#(head, rest)) ->
-          Model(..model, error: option.None, rt: head, history: rest)
+          Model(..model, error: None, rt: head, history: rest)
         _ -> model
       }
+    LinesChanged(lines) -> {
+      let model = Model(..model, lines: lines, compile_errors: [])
+      case compiler.compile(lines) {
+        Ok(program) ->
+          case runtime.new(program, model.initial_regs |> registers.from_list) {
+            Ok(rt) ->
+              Model(
+                ..model,
+                rt: rt,
+                error: None,
+                history: model.history |> queue.push_front(model.rt),
+              )
+            Error(err) -> Model(..model, error: Some(err))
+          }
+        Error(errors) -> Model(..model, compile_errors: [errors])
+      }
+    }
   }
 }
 
@@ -128,7 +150,8 @@ fn view(model: Model) -> Element(Msg) {
       ui_registers.view(model.rt |> runtime.get_registers),
     ]),
     ui.stack([], [html.h3([], [text("Control")]), control_view(model)]),
-    ui.stack([], [html.h3([], [text("Program")]), program_view(model)]),
+    // ui.stack([], [html.h3([], [text("Program")]), program_view(model)]),
+    editor(model),
   ])
 }
 
@@ -151,23 +174,83 @@ fn control_view(model: Model) {
     },
     html.br([]),
     case model.error {
-      option.None -> element.none()
-      option.Some(err) ->
-        text("Error: " <> runtime.runtime_error_to_string(err))
+      None -> element.none()
+      Some(err) -> text("Error: " <> runtime.runtime_error_to_string(err))
     },
   ])
 }
 
-fn program_view(model: Model) -> Element(a) {
-  model.lines
-  |> list.index_map(fn(line, idx) {
-    let pc = model.rt |> runtime.get_pc
-    let indicator = case pc.at == idx + 1, pc {
-      False, _ -> ""
-      True, runtime.Paused(_) -> ">"
-      True, runtime.Stopped(_) -> "*"
-    }
-    [indicator, int.to_string(idx + 1), line]
-  })
-  |> table.table
+// fn program_view(model: Model) -> Element(a) {
+//   model.lines
+//   |> list.index_map(fn(line, idx) {
+//     let pc = model.rt |> runtime.get_pc
+//     let indicator = case pc.at == idx + 1, pc {
+//       False, _ -> ""
+//       True, runtime.Paused(_) -> ">"
+//       True, runtime.Stopped(_) -> "*"
+//     }
+//     [indicator, int.to_string(idx + 1), line]
+//   })
+//   |> table.table
+// }
+
+fn editor(model: Model) -> Element(Msg) {
+  let styles = [#("width", "100%")]
+  let error_info = case model.compile_errors {
+    [] -> None
+    [error_info, ..] -> Some(error_info)
+  }
+  element.fragment([
+    html.text(case error_info {
+      None -> "Compilation succeeded"
+      Some(error_info) ->
+        "Line "
+        <> int.to_string(error_info.line)
+        <> ": "
+        <> compiler.compile_error_to_string(error_info.error)
+    }),
+    html.ol(
+      [
+        attribute.id("editor"),
+        attribute.style(styles),
+        attribute.attribute("contenteditable", "true"),
+        event.on("keyup", fn(event) {
+          use target <- result.try(dynamic.field("target", dynamic.dynamic)(
+            event,
+          ))
+          use text <- result.try(dynamic.field("innerText", dynamic.string)(
+            target,
+          ))
+          Ok(io.debug(LinesChanged(text |> string.split("\n"))))
+        }),
+      ],
+      model.lines
+        |> list.index_map(fn(line, idx) {
+          html.li(
+            [
+              event.on("input", fn(event) {
+                io.debug(event)
+                Error([])
+              }),
+              ..line_attr(model, idx + 1)
+            ],
+            [text(line)],
+          )
+        }),
+    ),
+  ])
+}
+
+fn line_attr(model: Model, line_no: Int) -> List(attribute.Attribute(a)) {
+  [
+    case model.compile_errors |> list.any(fn(info) { info.line == line_no }) {
+      True -> attribute.class("error")
+      False -> attribute.none()
+    },
+    case model.rt |> runtime.get_pc {
+      runtime.Paused(at) if at == line_no -> attribute.class("paused")
+      runtime.Stopped(at) if at == line_no -> attribute.class("stopped")
+      _ -> attribute.none()
+    },
+  ]
 }
