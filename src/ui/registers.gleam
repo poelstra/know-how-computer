@@ -6,7 +6,7 @@ import lustre/element.{type Element, text}
 import lustre/element/html
 
 pub fn view(registers: registers.Registers) -> Element(a) {
-  let border_styles = [#("border", "1px solid")]
+  let border_styles = [#("border", "1px solid"), #("max-width", "20rem")]
   html.table([attribute.style(border_styles)], [
     // html.thead([], [
     //   html.tr([], [html.th([], [text("#")]), html.th([], [text("Value")])]),

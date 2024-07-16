@@ -54,8 +54,6 @@ stp
   let lines = source |> string.trim |> string.split("\n")
   let assert Ok(program) = compiler.compile(lines)
   let regs = registers.from_list(initial_regs)
-  let assert Ok(regs) = regs |> registers.write(1, 3)
-  let assert Ok(regs) = regs |> registers.write(2, 4)
   let assert Ok(rt) = runtime.new(program, regs)
   Model(
     lines: lines,
@@ -150,8 +148,7 @@ fn view(model: Model) -> Element(Msg) {
       ui_registers.view(model.rt |> runtime.get_registers),
     ]),
     ui.stack([], [html.h3([], [text("Control")]), control_view(model)]),
-    // ui.stack([], [html.h3([], [text("Program")]), program_view(model)]),
-    editor(model),
+    program_editor(model),
   ])
 }
 
@@ -180,21 +177,7 @@ fn control_view(model: Model) {
   ])
 }
 
-// fn program_view(model: Model) -> Element(a) {
-//   model.lines
-//   |> list.index_map(fn(line, idx) {
-//     let pc = model.rt |> runtime.get_pc
-//     let indicator = case pc.at == idx + 1, pc {
-//       False, _ -> ""
-//       True, runtime.Paused(_) -> ">"
-//       True, runtime.Stopped(_) -> "*"
-//     }
-//     [indicator, int.to_string(idx + 1), line]
-//   })
-//   |> table.table
-// }
-
-fn editor(model: Model) -> Element(Msg) {
+fn program_editor(model: Model) -> Element(Msg) {
   let styles = [#("width", "100%")]
   let error_info = case model.compile_errors {
     [] -> None
@@ -214,28 +197,19 @@ fn editor(model: Model) -> Element(Msg) {
         attribute.id("editor"),
         attribute.style(styles),
         attribute.attribute("contenteditable", "true"),
-        event.on("keyup", fn(event) {
+        event.on("input", fn(event) {
           use target <- result.try(dynamic.field("target", dynamic.dynamic)(
             event,
           ))
           use text <- result.try(dynamic.field("innerText", dynamic.string)(
             target,
           ))
-          Ok(io.debug(LinesChanged(text |> string.split("\n"))))
+          Ok(LinesChanged(text |> string.split("\n")))
         }),
       ],
       model.lines
         |> list.index_map(fn(line, idx) {
-          html.li(
-            [
-              event.on("input", fn(event) {
-                io.debug(event)
-                Error([])
-              }),
-              ..line_attr(model, idx + 1)
-            ],
-            [text(line)],
-          )
+          html.li(line_attr(model, idx + 1), [text(line)])
         }),
     ),
   ])
