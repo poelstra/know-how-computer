@@ -44,6 +44,10 @@ pub fn get_registers(rt: Runtime) -> Registers {
   rt.registers
 }
 
+pub fn set_registers(rt: Runtime, regs: Registers) -> Runtime {
+  Runtime(..rt, registers: regs)
+}
+
 pub fn get_program(rt: Runtime) -> Program {
   rt.program
 }

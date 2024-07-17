@@ -26,32 +26,32 @@
       crossorigin="anonymous"
     ></script> -->
     <style>
-      ol#editor {
+      ol.editor {
         font-family: monospace;
         white-space: pre;
         padding-left: 3rem;
         list-style: decimal;
       }
-      #editor li::marker {
+      .editor li::marker {
         font-family: monospace;
         color: grey;
       }
-      #editor li {
+      .editor li {
         position: relative;
       }
-      #editor li.error {
+      .editor li.error {
         color: red;
       }
-      #editor li.error::before {
+      .editor li.error::before {
         content: "\274C"; /* cross */
         color: red;
         position: absolute;
         left: -1rem; /* Adjust the position as needed */
       }
-      #editor li.paused {
+      .editor li.paused {
         background-color: yellow;
       }
-      #editor li.stopped {
+      .editor li.stopped {
         background-color: lightgray;
       }
     </style>
