@@ -8,7 +8,7 @@ import gleam/string
 pub type Model {
   Model(
     lines: List(String),
-    initial_regs: List(Int),
+    initial_regs: registers.Registers,
     rt: runtime.Runtime,
     error: option.Option(runtime.RuntimeError),
     history: queue.Queue(runtime.Runtime),
@@ -37,7 +37,7 @@ stp
     rt: rt,
     error: None,
     history: queue.new(),
-    initial_regs: initial_regs,
+    initial_regs: regs,
     compile_errors: [],
     register_lines: None,
   )

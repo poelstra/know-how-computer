@@ -52,12 +52,7 @@ fn update(model: Model, msg: Msg) -> Model {
         Error(err) -> Model(..model, error: Some(err))
       }
     update.Reset ->
-      case
-        runtime.new(
-          model.rt |> runtime.get_program,
-          model.initial_regs |> registers.from_list,
-        )
-      {
+      case runtime.new(model.rt |> runtime.get_program, model.initial_regs) {
         Ok(rt) ->
           Model(
             ..model,
@@ -77,7 +72,7 @@ fn update(model: Model, msg: Msg) -> Model {
       let model = Model(..model, lines: lines, compile_errors: [])
       case compiler.compile(lines) {
         Ok(program) ->
-          case runtime.new(program, model.initial_regs |> registers.from_list) {
+          case runtime.new(program, model.initial_regs) {
             Ok(rt) ->
               Model(
                 ..model,
@@ -97,6 +92,10 @@ fn update(model: Model, msg: Msg) -> Model {
             ..model,
             rt: model.rt |> runtime.set_registers(regs),
             history: model.history |> queue.push_front(model.rt),
+            initial_regs: case model.rt |> runtime.get_pc {
+              runtime.Paused(1) -> regs
+              _ -> model.initial_regs
+            },
             register_lines: None,
           )
         Error(_) -> Model(..model, register_lines: Some(lines))
