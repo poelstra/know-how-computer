@@ -58,8 +58,10 @@ fn line_attr(model: Model, line_no: Int) -> List(attribute.Attribute(a)) {
       False -> attribute.none()
     },
     case model.rt |> runtime.get_pc {
+      runtime.Reset(at) if at == line_no -> attribute.class("paused")
       runtime.Paused(at) if at == line_no -> attribute.class("paused")
       runtime.Stopped(at) if at == line_no -> attribute.class("stopped")
+      runtime.Crashed(at, _) if at == line_no -> attribute.class("crashed")
       _ -> attribute.none()
     },
   ]

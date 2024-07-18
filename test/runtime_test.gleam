@@ -15,14 +15,12 @@ fn build_example() -> Runtime {
       instruction.Stp,
     ])
   let regs = registers.from_list([3, 4])
-  let assert Ok(rt) = runtime.new(program, regs)
-  rt
+  runtime.new(program, regs)
 }
 
 pub fn runtime_example_step1_test() {
   build_example()
   |> runtime.step()
-  |> should.be_ok
   |> runtime.get_pc
   |> should.equal(runtime.Paused(4))
 }
@@ -30,11 +28,8 @@ pub fn runtime_example_step1_test() {
 pub fn runtime_example_step3_test() {
   build_example()
   |> runtime.step()
-  |> should.be_ok
   |> runtime.step()
-  |> should.be_ok
   |> runtime.step()
-  |> should.be_ok
   |> runtime.get_pc
   |> should.equal(runtime.Paused(2))
 }
@@ -42,7 +37,6 @@ pub fn runtime_example_step3_test() {
 pub fn runtime_example_run_test() {
   build_example()
   |> runtime.run(100)
-  |> should.be_ok
   |> runtime.get_registers
   |> registers.to_list
   |> should.equal([7, 0])
@@ -52,7 +46,6 @@ pub fn runtime_limits_iterations_test() {
   let rt =
     build_example()
     |> runtime.run(5)
-    |> should.be_ok
 
   rt
   |> runtime.get_pc
