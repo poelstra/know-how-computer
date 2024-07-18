@@ -104,19 +104,36 @@ fn view(model: Model) -> Element(Msg) {
 }
 
 fn control_view(model: Model) {
+  let pc = model.rt |> runtime.get_pc
+  let reset_disabled = case pc {
+    runtime.Reset(_) -> True
+    _ -> False
+  }
+  let step_run_disabled = case pc {
+    runtime.Stopped(_) | runtime.Crashed(..) -> True
+    _ -> False
+  }
   ui.group([], [
     ui.button(
       [
         event.on_click(update.Undo),
-        // TODO disabled doesn't work...
         attribute.disabled(model.history |> queue.is_empty),
       ],
       [icon.reset([])],
     ),
-    ui.button([event.on_click(update.Reset)], [icon.reload([])]),
-    ui.button([event.on_click(update.Step)], [icon.resume([])]),
-    ui.button([event.on_click(update.Run)], [icon.play([])]),
-    case model.rt |> runtime.get_pc {
+    ui.button(
+      [event.on_click(update.Reset), attribute.disabled(reset_disabled)],
+      [icon.reload([])],
+    ),
+    ui.button(
+      [event.on_click(update.Step), attribute.disabled(step_run_disabled)],
+      [icon.resume([])],
+    ),
+    ui.button(
+      [event.on_click(update.Run), attribute.disabled(step_run_disabled)],
+      [icon.play([])],
+    ),
+    case pc {
       runtime.Reset(_) -> text("Ready")
       runtime.Paused(at) -> text("Paused at " <> { at |> int.to_string })
       runtime.Stopped(at) -> text("Stopped at " <> { at |> int.to_string })
