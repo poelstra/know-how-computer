@@ -58,7 +58,7 @@ fn update(model: Model, msg: Msg) -> Model {
         _ -> model
       }
 
-    update.LinesChanged(lines) -> {
+    update.ProgramLinesChanged(lines) -> {
       let model = Model(..model, lines: lines, compile_errors: [])
       case compiler.compile(lines) {
         Ok(program) -> {

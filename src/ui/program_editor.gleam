@@ -40,7 +40,7 @@ pub fn view(model: Model) -> Element(Msg) {
           use text <- result.try(dynamic.field("innerText", dynamic.string)(
             target,
           ))
-          Ok(update.LinesChanged(text |> string.split("\n")))
+          Ok(update.ProgramLinesChanged(text |> string.split("\n")))
         }),
       ],
       model.lines
