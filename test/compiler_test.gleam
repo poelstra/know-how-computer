@@ -1,6 +1,7 @@
 import computer/compiler
 import computer/instruction
 import computer/program
+import computer/source_map
 import gleeunit/should
 
 pub fn compiler_parses_simple_instructions_test() {
@@ -38,16 +39,13 @@ pub fn compiler_understands_nop_test() {
   )
 }
 
-pub fn compiler_converts_empty_to_nop_test() {
+pub fn compiler_skips_empty_lines() {
   compiler.compile(["inc 1", "", "dec 2"])
   |> should.be_ok
-  |> should.equal(
-    program.from_instructions([
-      instruction.Inc(1),
-      instruction.Nop,
-      instruction.Dec(2),
-    ]),
-  )
+  |> should.equal(program.from_instructions_and_source_map(
+    [instruction.Inc(1), instruction.Dec(2)],
+    source_map.from_program_to_source([#(1, 1), #(2, 3)]),
+  ))
 }
 
 pub fn compiler_rejects_unknown_commands_test() {

@@ -1,7 +1,9 @@
 import computer/instruction.{type Instruction}
 import computer/program.{type Program}
+import computer/source_map
 import gleam/int
 import gleam/list
+import gleam/pair
 import gleam/result
 import gleam/string
 
@@ -21,20 +23,40 @@ pub fn compile(lines: List(String)) -> Result(Program, CompileErrorInfo) {
   lines
   |> list.map(string.trim)
   |> list.map(string.lowercase)
-  |> list.index_map(fn(line, line_no) {
-    line
-    |> parse_instruction
-    |> result.map_error(fn(err) { CompileErrorInfo(err, line_no + 1) })
-  })
+  |> list.index_map(fn(line, idx) { #(idx + 1, line) })
+  |> list.filter(fn(line) { !{ line.1 |> string.trim |> string.is_empty } })
+  |> list.map(parse_line)
   |> result.all
-  |> result.map(program.from_instructions)
+  |> result.map(to_program)
+}
+
+fn parse_line(
+  line: #(Int, String),
+) -> Result(#(Int, Instruction), CompileErrorInfo) {
+  let #(line_no, text) = line
+  case parse_instruction(text) {
+    Ok(instruction) -> Ok(#(line_no, instruction))
+    Error(err) -> Error(CompileErrorInfo(err, line_no))
+  }
+}
+
+fn to_program(lines: List(#(Int, Instruction))) -> Program {
+  let instructions = lines |> list.map(pair.second)
+  let program_to_source =
+    lines
+    |> list.index_map(fn(source_line, program_idx) {
+      let #(source_line_no, _) = source_line
+      #(program_idx + 1, source_line_no)
+    })
+  let sm = source_map.from_program_to_source(program_to_source)
+  program.from_instructions_and_source_map(instructions, sm)
 }
 
 pub fn parse_instruction(line: String) -> Result(Instruction, CompileError) {
   let #(cmd, args) =
     line |> string.split_once(" ") |> result.unwrap(#(line, ""))
   case cmd {
-    "" | "nop" -> args |> parse_none(instruction.Nop)
+    "nop" -> args |> parse_none(instruction.Nop)
     "inc" -> args |> parse_reg(instruction.Inc)
     "dec" -> args |> parse_reg(instruction.Dec)
     "isz" -> args |> parse_reg(instruction.Isz)
