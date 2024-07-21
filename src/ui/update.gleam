@@ -3,6 +3,8 @@ pub type Msg {
   Reset
   Step
   Run
+  Pause
+  AutoRun
   ProgramLinesChanged(lines: List(String))
   RegisterLinesChanged(lines: List(String))
 }

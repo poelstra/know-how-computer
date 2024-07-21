@@ -49,10 +49,16 @@ pub fn runtime_limits_iterations_test() {
 
   rt
   |> runtime.get_pc
-  |> should.equal(runtime.Paused(4))
+  |> should.equal(runtime.Running(4))
 
   rt
   |> runtime.get_registers
   |> registers.to_list
   |> should.equal([4, 3])
+
+  rt
+  |> runtime.run(100)
+  |> runtime.get_registers
+  |> registers.to_list
+  |> should.equal([7, 0])
 }

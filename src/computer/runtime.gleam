@@ -1,7 +1,6 @@
 import computer/instruction.{type Instruction}
 import computer/program.{type Program}
 import computer/registers.{type Registers}
-import gleam/bool
 import gleam/int
 
 pub opaque type Runtime {
@@ -16,6 +15,8 @@ pub opaque type Runtime {
 pub type ProgramCounter {
   // Waiting at the first instruction, just after reset
   Reset(at: Int)
+  /// Hit the iteration limit while executing a run, now paused at the start of the given instruction
+  Running(at: Int)
   /// Paused at (the start of) an instruction, due to a step, breakpoint or iteration limit
   Paused(at: Int)
   /// Halted by the STP instruction at the given address
@@ -77,18 +78,46 @@ pub fn set_program(rt: Runtime, program: Program) -> Runtime {
   Runtime(..rt, program: program)
 }
 
+pub fn is_runnable(rt: Runtime) -> Bool {
+  case rt.pc {
+    Reset(_) | Running(_) | Paused(_) -> True
+    Stopped(_) | Crashed(..) -> False
+  }
+}
+
 pub fn run(rt: Runtime, max_iterations: Int) -> Runtime {
-  use <- bool.guard(max_iterations <= 0, rt)
-  let rt = step(rt)
+  case max_iterations > 0 {
+    True -> {
+      let rt = do_step(rt)
+      case rt |> get_pc {
+        Running(_) -> run(rt, max_iterations - 1)
+        _ -> rt
+      }
+    }
+    False -> rt
+  }
+}
+
+pub fn pause(rt: Runtime) -> Runtime {
   case rt |> get_pc {
-    Paused(_) -> run(rt, max_iterations - 1)
+    Running(at) -> rt |> set_pc(Paused(at))
     _ -> rt
   }
 }
 
 pub fn step(rt: Runtime) -> Runtime {
+  let rt = do_step(rt)
+  case rt |> get_pc {
+    Running(at) -> rt |> set_pc(Paused(at))
+    _ -> rt
+  }
+}
+
+/// Perform one step in the run sequence, leaving the program
+/// in either Running or a Stopped/Crashed state.
+fn do_step(rt: Runtime) -> Runtime {
   case rt.pc {
-    Reset(at) | Paused(at) ->
+    Reset(at) | Running(at) | Paused(at) ->
       case rt.program |> program.read(at) {
         Ok(instruction) -> exec(rt, instruction)
         _ -> rt |> set_crashed(InvalidAddress(at))
@@ -128,17 +157,13 @@ fn exec(rt: Runtime, instruction: Instruction) -> Runtime {
 }
 
 fn next(rt: Runtime, jump: NextAddress) -> Runtime {
-  let at = case rt.pc {
-    Reset(at) | Paused(at) -> at
-    _ -> panic as "cannot continue after stop/crash"
+  let target = case jump {
+    JumpRel(distance) -> rt.pc.at + distance
+    JumpAbs(addr) -> addr
   }
-  let res = case jump {
-    JumpRel(distance) -> rt |> set_addr(at + distance)
-    JumpAbs(addr) -> rt |> set_addr(addr)
-  }
-  case res {
-    Ok(rt) -> rt
-    Error(err) -> rt |> set_crashed(err)
+  case program.is_valid_address(rt.program, target) {
+    True -> rt |> set_pc(Running(target))
+    False -> rt |> set_crashed(InvalidAddress(target))
   }
 }
 

@@ -73,8 +73,8 @@ fn line_attr(
     case line_no == current_line {
       True ->
         case model.rt |> runtime.get_pc {
-          runtime.Reset(_) -> attribute.class("paused")
-          runtime.Paused(_) -> attribute.class("paused")
+          runtime.Running(_) | runtime.Reset(_) | runtime.Paused(_) ->
+            attribute.class("paused")
           runtime.Stopped(_) -> attribute.class("stopped")
           runtime.Crashed(_, _) -> attribute.class("crashed")
         }

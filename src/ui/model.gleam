@@ -4,6 +4,7 @@ import computer/runtime
 import gleam/option.{None}
 import gleam/queue
 import gleam/string
+import lustre/effect.{type Effect}
 
 pub type Model {
   Model(
@@ -15,7 +16,7 @@ pub type Model {
   )
 }
 
-pub fn init(_flags) -> Model {
+pub fn init(_flags) -> #(Model, Effect(a)) {
   let initial_regs = [3, 4, 0, 0]
   let source =
     "
@@ -30,11 +31,14 @@ stp
   let assert Ok(program) = compiler.compile(lines)
   let regs = registers.from_list(initial_regs)
   let rt = runtime.new(program, regs)
-  Model(
-    lines: lines,
-    rt: rt,
-    history: queue.new(),
-    compile_errors: [],
-    register_lines: None,
+  #(
+    Model(
+      lines: lines,
+      rt: rt,
+      history: queue.new(),
+      compile_errors: [],
+      register_lines: None,
+    ),
+    effect.none(),
   )
 }
