@@ -1,6 +1,7 @@
 import computer/instruction.{type Instruction}
 import computer/program.{type Program}
 import computer/source_map
+import gleam/bool
 import gleam/int
 import gleam/list
 import gleam/pair
@@ -24,7 +25,8 @@ pub fn compile(lines: List(String)) -> Result(Program, CompileErrorInfo) {
   |> list.map(string.trim)
   |> list.map(string.lowercase)
   |> list.index_map(fn(line, idx) { #(idx + 1, line) })
-  |> list.filter(fn(line) { !{ line.1 |> string.trim |> string.is_empty } })
+  |> list.map(strip_comment)
+  |> list.filter(filter_empty)
   |> list.map(parse_line)
   |> result.all
   |> result.map(to_program)
@@ -38,6 +40,19 @@ fn parse_line(
     Ok(instruction) -> Ok(#(line_no, instruction))
     Error(err) -> Error(CompileErrorInfo(err, line_no))
   }
+}
+
+fn strip_comment(line: #(Int, String)) -> #(Int, String) {
+  let #(line_no, text) = line
+  let text = case text |> string.split_once("//") {
+    Ok(#(code, _comment)) -> code |> string.trim
+    _ -> text
+  }
+  #(line_no, text)
+}
+
+fn filter_empty(line: #(Int, String)) -> Bool {
+  line.1 |> string.trim |> string.is_empty |> bool.negate
 }
 
 fn to_program(lines: List(#(Int, Instruction))) -> Program {
