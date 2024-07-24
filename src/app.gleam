@@ -16,6 +16,7 @@ import lustre/element/html
 import lustre/event
 import lustre/ui
 import lustre/ui/icon
+import ui/codemirror
 import ui/model.{type Model, Model}
 import ui/program_editor
 import ui/register_editor
@@ -24,6 +25,7 @@ import ui/update.{type Msg}
 // MAIN ------------------------------------------------------------------------
 
 pub fn main() {
+  codemirror.install()
   let app = lustre.application(model.init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", 0)
 
@@ -109,7 +111,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
 
     update.RegisterLinesChanged(lines) -> {
-      case lines |> list.try_map(int.parse) |> result.map(registers.from_list) {
+      case
+        lines
+        |> list.try_map(int.parse)
+        |> result.map(registers.from_list)
+      {
         Ok(regs) -> #(
           Model(
             ..model,
