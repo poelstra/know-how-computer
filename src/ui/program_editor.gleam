@@ -2,16 +2,14 @@ import computer/compiler
 import computer/program
 import computer/runtime
 import computer/source_map
-import gleam/dynamic
 import gleam/int
+import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
-import gleam/result
-import gleam/string
 import lustre/attribute
-import lustre/element.{type Element, text}
+import lustre/element.{type Element}
 import lustre/element/html
-import lustre/event
+import ui/codemirror
 import ui/model.{type Model, Model}
 import ui/update.{type Msg}
 
@@ -21,13 +19,22 @@ pub fn view(model: Model) -> Element(Msg) {
     [] -> None
     [error_info, ..] -> Some(error_info)
   }
+  let diagnostics =
+    model.compile_errors
+    |> list.map(fn(error_info) {
+      codemirror.LineDiagnostic(
+        line: error_info.line,
+        message: compiler.compile_error_to_string(error_info.error),
+        severity: codemirror.ErrorSeverity,
+      )
+    })
   let program_at = runtime.get_pc(model.rt).at
-  let source_at =
+  let active_source_line =
     model.rt
     |> runtime.get_program
     |> program.get_source_map
     |> source_map.get_source_line(program_at)
-    |> result.unwrap(0)
+    |> option.from_result
   element.fragment([
     html.text(case error_info {
       None -> "Compilation succeeded"
@@ -37,48 +44,17 @@ pub fn view(model: Model) -> Element(Msg) {
         <> ": "
         <> compiler.compile_error_to_string(error_info.error)
     }),
-    html.ol(
+    codemirror.editor(
       [
-        attribute.class("editor"),
         attribute.style(styles),
-        attribute.attribute("contenteditable", "true"),
-        event.on("input", fn(event) {
-          use target <- result.try(dynamic.field("target", dynamic.dynamic)(
-            event,
-          ))
-          use text <- result.try(dynamic.field("innerText", dynamic.string)(
-            target,
-          ))
-          Ok(update.ProgramLinesChanged(text |> string.split("\n")))
-        }),
+        attribute.property(
+          "activeProgramLine",
+          json.nullable(active_source_line, of: json.int),
+        ),
       ],
-      model.lines
-        |> list.index_map(fn(line, idx) {
-          html.li(line_attr(model, idx + 1, source_at), [text(line)])
-        }),
-    ),
+      model.lines,
+      diagnostics,
+    )
+      |> element.map(fn(msg) { update.ProgramLinesChanged(msg.lines) }),
   ])
-}
-
-fn line_attr(
-  model: Model,
-  line_no: Int,
-  current_line: Int,
-) -> List(attribute.Attribute(a)) {
-  [
-    case model.compile_errors |> list.any(fn(info) { info.line == line_no }) {
-      True -> attribute.class("error")
-      False -> attribute.none()
-    },
-    case line_no == current_line {
-      True ->
-        case model.rt |> runtime.get_pc {
-          runtime.Running(_) | runtime.Reset(_) | runtime.Paused(_) ->
-            attribute.class("paused")
-          runtime.Stopped(_) -> attribute.class("stopped")
-          runtime.Crashed(_, _) -> attribute.class("crashed")
-        }
-      False -> attribute.none()
-    },
-  ]
 }
