@@ -63,6 +63,11 @@ export class CodeMirror extends HTMLElement {
     });
   }
 
+  disconnectedCallback() {
+    this.editor.destroy();
+    this.shadowRoot!.getElementById("editor")?.remove();
+  }
+
   private _setContent(value: string) {
     if (this.value !== value) {
       this.editor.dispatch({
