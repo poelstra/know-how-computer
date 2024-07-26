@@ -36,6 +36,8 @@ pub fn main() {
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
+    update.Nop -> #(model, effect.none())
+
     update.AutoRun ->
       case model.rt |> runtime.get_pc {
         runtime.Running(_) -> do_run(model)
@@ -84,6 +86,28 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         _ -> #(model, effect.none())
       }
 
+    update.SetActiveLineToSelection -> {
+      case
+        model.rt
+        |> runtime.get_program
+        |> program.get_source_map
+        |> source_map.get_program_line(model.selected_line)
+        |> result.try(fn(program_line) {
+          runtime.set_addr(model.rt, program_line) |> result.nil_error
+        })
+      {
+        Ok(rt) -> #(
+          Model(
+            ..model,
+            rt: rt,
+            history: model.history |> queue.push_front(model.rt),
+          ),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+
     update.ProgramLinesChanged(lines) -> {
       let model = Model(..model, lines: lines, compile_errors: [])
       case compiler.compile(lines) {
@@ -131,11 +155,31 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         )
       }
     }
+
+    update.BreakpointsChanged(bps) -> {
+      let sm =
+        model.rt
+        |> runtime.get_program
+        |> program.get_source_map
+
+      case bps |> list.map(source_map.get_program_line(sm, _)) |> result.all {
+        Ok(program_bps) -> #(
+          Model(..model, breakpoints: program_bps),
+          effect.none(),
+        )
+        _ -> #(model, effect.none())
+      }
+    }
+
+    update.SelectedLineChanged(line_no) -> #(
+      Model(..model, selected_line: line_no),
+      effect.none(),
+    )
   }
 }
 
 fn do_run(model: Model) -> #(Model, Effect(Msg)) {
-  let rt = model.rt |> runtime.run(100)
+  let rt = model.rt |> runtime.run(100, model.breakpoints)
   case rt |> runtime.get_pc {
     // Iterations exceeded, keep running on next tick
     runtime.Running(_) -> #(Model(..model, rt: rt), next_tick(update.AutoRun))
@@ -186,12 +230,15 @@ fn control_view(model: Model) {
         event.on_click(update.Undo),
         attribute.disabled(model.history |> queue.is_empty),
       ],
-      [icon.reset([])],
+      [icon.counter_clockwise_clock([])],
     ),
     ui.button(
       [event.on_click(update.Reset), attribute.disabled(reset_disabled)],
       [icon.reload([])],
     ),
+    ui.button([event.on_click(update.SetActiveLineToSelection)], [
+      icon.pin_right([]),
+    ]),
     ui.button(
       [event.on_click(update.Step), attribute.disabled(step_run_disabled)],
       [icon.resume([])],

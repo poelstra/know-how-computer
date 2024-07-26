@@ -55,6 +55,13 @@ pub fn view(model: Model) -> Element(Msg) {
       model.lines,
       diagnostics,
     )
-      |> element.map(fn(msg) { update.ProgramLinesChanged(msg.lines) }),
+      |> element.map(fn(msg) {
+        case msg {
+          codemirror.ContentChanged(lines) -> update.ProgramLinesChanged(lines)
+          codemirror.BreakpointsChanged(bps) -> update.BreakpointsChanged(bps)
+          codemirror.SelectedLineChanged(line_no) ->
+            update.SelectedLineChanged(line_no)
+        }
+      }),
   ])
 }

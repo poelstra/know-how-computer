@@ -36,7 +36,7 @@ pub fn runtime_example_step3_test() {
 
 pub fn runtime_example_run_test() {
   build_example()
-  |> runtime.run(100)
+  |> runtime.run(100, [])
   |> runtime.get_registers
   |> registers.to_list
   |> should.equal([7, 0])
@@ -45,7 +45,7 @@ pub fn runtime_example_run_test() {
 pub fn runtime_limits_iterations_test() {
   let rt =
     build_example()
-    |> runtime.run(5)
+    |> runtime.run(5, [])
 
   rt
   |> runtime.get_pc
@@ -57,8 +57,29 @@ pub fn runtime_limits_iterations_test() {
   |> should.equal([4, 3])
 
   rt
-  |> runtime.run(100)
+  |> runtime.run(100, [])
   |> runtime.get_registers
   |> registers.to_list
   |> should.equal([7, 0])
+}
+
+pub fn runtime_stops_on_breakpoints_test() {
+  let rt =
+    build_example()
+    |> runtime.run(100, [3, 6])
+
+  rt
+  |> runtime.get_pc
+  |> should.equal(runtime.Paused(3))
+
+  rt
+  |> runtime.get_registers
+  |> registers.to_list
+  |> should.equal([4, 4])
+
+  rt
+  |> runtime.run(100, [3, 6])
+  |> runtime.get_registers
+  |> registers.to_list
+  |> should.equal([5, 3])
 }

@@ -25,7 +25,12 @@ pub fn view(model: Model) -> Element(Msg) {
 
   element.fragment([
     codemirror.editor([attribute.style(styles)], lines, diagnostics)
-    |> element.map(fn(msg) { update.RegisterLinesChanged(msg.lines) }),
+    |> element.map(fn(msg) {
+      case msg {
+        codemirror.ContentChanged(lines) -> update.RegisterLinesChanged(lines)
+        _ -> update.Nop
+      }
+    }),
   ])
 }
 

@@ -12,6 +12,8 @@ pub fn install() -> Nil
 
 pub type CodeMirrorMessage {
   ContentChanged(lines: List(String))
+  BreakpointsChanged(breakpoints: List(Int))
+  SelectedLineChanged(line: Int)
 }
 
 pub type DiagnosticSeverity {
@@ -83,6 +85,16 @@ pub fn editor(
         event
         |> dynamic.field("detail", dynamic.list(of: dynamic.string))
         |> result.map(ContentChanged)
+      }),
+      event.on("selected-line-changed", fn(event) {
+        event
+        |> dynamic.field("detail", dynamic.int)
+        |> result.map(SelectedLineChanged)
+      }),
+      event.on("breakpoints-changed", fn(event) {
+        event
+        |> dynamic.field("detail", dynamic.list(of: dynamic.int))
+        |> result.map(BreakpointsChanged)
       }),
       ..attributes
     ],

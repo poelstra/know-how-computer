@@ -2,6 +2,7 @@ import computer/instruction.{type Instruction}
 import computer/program.{type Program}
 import computer/registers.{type Registers}
 import gleam/int
+import gleam/list
 
 pub opaque type Runtime {
   Runtime(
@@ -85,12 +86,16 @@ pub fn is_runnable(rt: Runtime) -> Bool {
   }
 }
 
-pub fn run(rt: Runtime, max_iterations: Int) -> Runtime {
+pub fn run(rt: Runtime, max_iterations: Int, breakpoints: List(Int)) -> Runtime {
   case max_iterations > 0 {
     True -> {
       let rt = do_step(rt)
       case rt |> get_pc {
-        Running(_) -> run(rt, max_iterations - 1)
+        Running(at) ->
+          case breakpoints |> list.contains(at) {
+            False -> run(rt, max_iterations - 1, breakpoints)
+            True -> rt |> pause
+          }
         _ -> rt
       }
     }

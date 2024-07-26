@@ -18,3 +18,7 @@ pub fn from_program_to_source(program_to_source: List(#(Int, Int))) -> SourceMap
 pub fn get_source_line(sm: SourceMap, program_line: Int) -> Result(Int, Nil) {
   sm.program_to_source |> dict.get(program_line)
 }
+
+pub fn get_program_line(sm: SourceMap, source_line: Int) -> Result(Int, Nil) {
+  sm.source_to_program |> dict.get(source_line)
+}

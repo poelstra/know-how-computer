@@ -90,6 +90,18 @@ const breakpointGutter = [
   }),
 ];
 
+function getBreakpointLines(
+  doc: Text,
+  breakpoints: RangeSet<GutterMarker>
+): number[] {
+  const result: number[] = [];
+  for (let iter = breakpoints.iter(); iter.value !== null; iter.next()) {
+    const line_no = doc.lineAt(iter.from).number;
+    result.push(line_no);
+  }
+  return result;
+}
+
 // === Active Program Line ===
 
 const activeProgramLineDeco = Decoration.line({
@@ -189,6 +201,21 @@ export class CodeMirror extends HTMLElement {
               detail: update.state.doc.toJSON(),
             });
             this.dispatchEvent(event);
+          }
+          if (update.selectionSet) {
+            const head = update.state.selection.main.head;
+            const line_no = update.state.doc.lineAt(head).number;
+            this.dispatchEvent(
+              new CustomEvent("selected-line-changed", { detail: line_no })
+            );
+          }
+          const beforeBps = update.startState.field(breakpointState);
+          const afterBps = update.state.field(breakpointState);
+          if (!RangeSet.eq([beforeBps], [afterBps])) {
+            const lines = getBreakpointLines(update.state.doc, afterBps);
+            this.dispatchEvent(
+              new CustomEvent("breakpoints-changed", { detail: lines })
+            );
           }
         }),
       ],

@@ -13,6 +13,8 @@ pub type Model {
     history: queue.Queue(runtime.Runtime),
     compile_errors: List(compiler.CompileErrorInfo),
     register_lines: option.Option(List(String)),
+    breakpoints: List(Int),
+    selected_line: Int,
   )
 }
 
@@ -38,6 +40,8 @@ stp
       history: queue.new(),
       compile_errors: [],
       register_lines: None,
+      breakpoints: [],
+      selected_line: 1,
     ),
     effect.none(),
   )
