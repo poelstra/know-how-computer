@@ -208,8 +208,11 @@ fn set_timeout(_ms: Int, _cb: fn() -> a) -> Nil {
 
 fn view(model: Model) -> Element(Msg) {
   ui.box([], [
-    ui.stack([], [html.h3([], [text("Registers")]), register_editor.view(model)]),
-    ui.stack([], [html.h3([], [text("Control")]), control_view(model)]),
+    html.h1([], [text("Know-How Computer")]),
+    html.h3([], [text("Registers")]),
+    register_editor.view(model),
+    html.h3([], [text("Control")]),
+    control_view(model),
     program_editor.view(model),
   ])
 }
@@ -224,35 +227,54 @@ fn control_view(model: Model) {
     runtime.Stopped(_) | runtime.Crashed(..) -> True
     _ -> False
   }
-  ui.group([], [
-    ui.button(
-      [
-        event.on_click(update.Undo),
-        attribute.disabled(model.history |> queue.is_empty),
-      ],
-      [icon.counter_clockwise_clock([])],
-    ),
-    ui.button(
-      [event.on_click(update.Reset), attribute.disabled(reset_disabled)],
-      [icon.reload([])],
-    ),
-    ui.button([event.on_click(update.SetActiveLineToSelection)], [
-      icon.pin_right([]),
+  element.fragment([
+    ui.group([], [
+      ui.button(
+        [
+          event.on_click(update.Undo),
+          attribute.disabled(model.history |> queue.is_empty),
+          attribute.attribute("title", "Undo program step / register change"),
+        ],
+        [icon.counter_clockwise_clock([])],
+      ),
+      ui.button(
+        [
+          event.on_click(update.Reset),
+          attribute.disabled(reset_disabled),
+          attribute.attribute("title", "Reset program and registers"),
+        ],
+        [icon.reload([])],
+      ),
+      ui.button(
+        [
+          event.on_click(update.SetActiveLineToSelection),
+          attribute.attribute("title", "Set program counter at cursor"),
+        ],
+        [icon.pin_right([])],
+      ),
+      ui.button(
+        [
+          event.on_click(update.Step),
+          attribute.disabled(step_run_disabled),
+          attribute.attribute("title", "Step"),
+        ],
+        [icon.resume([])],
+      ),
+      case pc {
+        runtime.Running(_) ->
+          ui.button([event.on_click(update.Pause)], [icon.pause([])])
+        _ ->
+          ui.button(
+            [
+              event.on_click(update.Run),
+              attribute.disabled(step_run_disabled),
+              attribute.attribute("title", "Run"),
+            ],
+            [icon.play([])],
+          )
+      },
     ]),
-    ui.button(
-      [event.on_click(update.Step), attribute.disabled(step_run_disabled)],
-      [icon.resume([])],
-    ),
-    case pc {
-      runtime.Running(_) ->
-        ui.button([event.on_click(update.Pause)], [icon.pause([])])
-      _ ->
-        ui.button(
-          [event.on_click(update.Run), attribute.disabled(step_run_disabled)],
-          [icon.play([])],
-        )
-    },
-    text(fmt_pc(model.rt)),
+    html.span([attribute.class("program-state")], [text(fmt_pc(model.rt))]),
   ])
 }
 
