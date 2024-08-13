@@ -24,15 +24,19 @@ pub type CompileError {
   InvalidIdentifier(got: String)
   UnknownLabel(got: String)
   LabelWithoutInstruction(got: String)
+  InvalidJumpLocation(got: Int)
 }
 
 type CompileInstruction {
   DirectInstruction(instruction: Instruction)
   NamedJump(label: String)
+  NumericJump(source_line: Int)
 }
 
 pub fn compile(lines: List(String)) -> Result(Program, CompileErrorInfo) {
   let max_lines = list.length(lines)
+
+  // Strip comments and empty lines
   let stripped_lines =
     lines
     |> list.map(string.trim)
@@ -41,6 +45,7 @@ pub fn compile(lines: List(String)) -> Result(Program, CompileErrorInfo) {
     |> list.map(strip_comment)
     |> list.filter(filter_empty)
 
+  // Parse labels
   let labels_result =
     stripped_lines
     |> list.filter(line_is_label)
@@ -59,6 +64,7 @@ pub fn compile(lines: List(String)) -> Result(Program, CompileErrorInfo) {
       }
     })
 
+  // Parse instruction (non-label) lines
   use labels <- result.try(labels_result)
 
   let instruction_lines =
@@ -67,6 +73,7 @@ pub fn compile(lines: List(String)) -> Result(Program, CompileErrorInfo) {
     |> list.map(parse_line)
     |> result.all
 
+  // Build source map and map of label-to-resolved-address
   use instruction_lines <- result.try(instruction_lines)
   let sm = build_source_map(instruction_lines)
 
@@ -86,21 +93,29 @@ pub fn compile(lines: List(String)) -> Result(Program, CompileErrorInfo) {
     })
     |> result.map(dict.from_list)
 
+  // Resolve labels in instructions
   use resolved_labels <- result.try(resolved_labels)
 
   instruction_lines
-  |> process_replacements(resolved_labels)
+  |> process_replacements(resolved_labels, sm)
   |> result.map(to_program)
 }
 
 fn process_replacements(
   lines: List(#(Int, CompileInstruction)),
   labels: dict.Dict(String, Int),
+  sm: source_map.SourceMap,
 ) -> Result(List(#(Int, Instruction)), CompileErrorInfo) {
   lines
   |> list.try_map(fn(line) {
     case line.1 {
       DirectInstruction(instruction) -> Ok(instruction)
+      NumericJump(source_line) -> {
+        case sm |> source_map.get_program_line(source_line) {
+          Error(_) -> Error(InvalidJumpLocation(source_line))
+          Ok(program_line) -> Ok(instruction.Jmp(program_line))
+        }
+      }
       NamedJump(label) -> {
         case labels |> dict.get(label) {
           Error(_) -> Error(UnknownLabel(label))
@@ -187,8 +202,7 @@ fn parse_instruction(line: String) -> Result(CompileInstruction, CompileError) {
     "jmp" ->
       case is_valid_identifier(args) {
         True -> Ok(NamedJump(args))
-        False ->
-          args |> parse_addr(instruction.Jmp) |> result.map(DirectInstruction)
+        False -> args |> parse_addr(NumericJump)
       }
     "stp" ->
       args |> parse_none(instruction.Stp) |> result.map(DirectInstruction)
@@ -235,5 +249,7 @@ pub fn compile_error_to_string(error: CompileError) -> String {
     UnknownLabel(got) -> "UnknownLabel, got '" <> got <> "'"
     LabelWithoutInstruction(got) ->
       "LabelWithoutInstruction, got '" <> got <> "'"
+    InvalidJumpLocation(got) ->
+      "InvalidJumpLocation, got '" <> int.to_string(got) <> "'"
   }
 }
