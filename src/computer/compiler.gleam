@@ -17,9 +17,8 @@ pub type CompileErrorInfo {
 pub type CompileError {
   UnknownCommand(got: String)
   NoArgsExpected(got: String)
-  IntArgExpected(got: String)
-  RegisterNumberExpected(got: Int)
-  AddressExpected(got: Int)
+  RegisterNumberExpected(got: String)
+  AddressExpected(got: String)
   DuplicateLabel(previous: Int)
   InvalidIdentifier(got: String)
   UnknownLabel(got: String)
@@ -212,17 +211,17 @@ fn parse_instruction(line: String) -> Result(CompileInstruction, CompileError) {
 
 fn parse_reg(args: String, cb: fn(Int) -> a) -> Result(a, CompileError) {
   case int.parse(args) {
-    Error(_) -> Error(IntArgExpected(args))
+    Error(_) -> Error(RegisterNumberExpected(args))
     Ok(n) if n >= 1 -> Ok(cb(n))
-    Ok(n) -> Error(RegisterNumberExpected(n))
+    Ok(_n) -> Error(RegisterNumberExpected(args))
   }
 }
 
 fn parse_addr(args: String, cb: fn(Int) -> a) -> Result(a, CompileError) {
   case int.parse(args) {
-    Error(_) -> Error(IntArgExpected(args))
+    Error(_) -> Error(AddressExpected(args))
     Ok(n) if n >= 1 -> Ok(cb(n))
-    Ok(n) -> Error(AddressExpected(n))
+    Ok(_n) -> Error(AddressExpected(args))
   }
 }
 
@@ -237,11 +236,8 @@ pub fn compile_error_to_string(error: CompileError) -> String {
   case error {
     UnknownCommand(got) -> "UnknownCommand, got '" <> got <> "'"
     NoArgsExpected(got) -> "NoArgsExpected, got '" <> got <> "'"
-    IntArgExpected(got) -> "IntArgExpected, got '" <> got <> "'"
-    RegisterNumberExpected(got) ->
-      "RegisterNumberExpected, got '" <> int.to_string(got) <> "'"
-    AddressExpected(got) ->
-      "AddressExpected, got '" <> int.to_string(got) <> "'"
+    RegisterNumberExpected(got) -> "RegisterNumberExpected, got '" <> got <> "'"
+    AddressExpected(got) -> "AddressExpected, got '" <> got <> "'"
     DuplicateLabel(previous_line) ->
       "DuplicateLabel, previous definition at line "
       <> int.to_string(previous_line)

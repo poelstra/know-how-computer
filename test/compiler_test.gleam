@@ -62,7 +62,7 @@ pub fn compiler_rejects_invalid_reg_argument_test() {
   compiler.compile(["inc 0"])
   |> should.be_error
   |> should.equal(compiler.CompileErrorInfo(
-    error: compiler.RegisterNumberExpected(got: 0),
+    error: compiler.RegisterNumberExpected(got: "0"),
     line: 1,
   ))
 }
