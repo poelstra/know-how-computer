@@ -7,7 +7,7 @@ import lustre/attribute
 import lustre/element.{type Element}
 import ui/codemirror
 import ui/model.{type Model, Model}
-import ui/update.{type Msg}
+import ui/msg.{type Msg}
 
 pub fn view(model: Model) -> Element(Msg) {
   let styles = [#("width", "100%"), #("max-width", "12rem")]
@@ -27,8 +27,8 @@ pub fn view(model: Model) -> Element(Msg) {
     codemirror.editor([attribute.style(styles)], lines, diagnostics)
     |> element.map(fn(msg) {
       case msg {
-        codemirror.ContentChanged(lines) -> update.RegisterLinesChanged(lines)
-        _ -> update.Nop
+        codemirror.ContentChanged(lines) -> msg.RegisterLinesChanged(lines)
+        _ -> msg.Nop
       }
     }),
   ])

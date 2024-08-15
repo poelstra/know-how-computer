@@ -9,7 +9,7 @@ import lustre/attribute
 import lustre/element.{type Element}
 import ui/codemirror
 import ui/model.{type Model, Model}
-import ui/update.{type Msg}
+import ui/msg.{type Msg}
 
 pub fn view(model: Model) -> Element(Msg) {
   let styles = [#("width", "100%")]
@@ -57,10 +57,10 @@ pub fn view(model: Model) -> Element(Msg) {
     )
     |> element.map(fn(msg) {
       case msg {
-        codemirror.ContentChanged(lines) -> update.ProgramLinesChanged(lines)
-        codemirror.BreakpointsChanged(bps) -> update.BreakpointsChanged(bps)
+        codemirror.ContentChanged(lines) -> msg.ProgramLinesChanged(lines)
+        codemirror.BreakpointsChanged(bps) -> msg.BreakpointsChanged(bps)
         codemirror.SelectedLineChanged(line_no) ->
-          update.SelectedLineChanged(line_no)
+          msg.SelectedLineChanged(line_no)
       }
     }),
   ])
