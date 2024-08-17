@@ -47,9 +47,9 @@ jobs:
           cp -a build/dev/javascript/lustre_ui/priv/static/lustre-ui.css priv/static/lustre-ui.css
           name="know_how_computer"
           sed \
-            -e "s|/priv/static/${name}.mjs|/${name}.min.mjs|" \
-            -e "s|/priv/static/${name}.css|/${name}.min.css|" \
-            -e "s|/build/dev/javascript/lustre_ui/priv/static/lustre-ui.css|/lustre-ui.css|" \
+            -e "s|/priv/static/${name}.mjs|./${name}.min.mjs|" \
+            -e "s|/priv/static/${name}.css|./${name}.min.css|" \
+            -e "s|/build/dev/javascript/lustre_ui/priv/static/lustre-ui.css|./lustre-ui.css|" \
             < index.html > priv/static/index.html
 
       - name: Setup Pages
