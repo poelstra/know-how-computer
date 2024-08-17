@@ -3,5 +3,5 @@
 /node_modules/
 /build
 erl_crash.dump
-/priv/static/know_how_computer.mjs
+/priv/static/
 /src/codemirror_ffi.mjs
