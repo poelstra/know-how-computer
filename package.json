@@ -1,14 +1,18 @@
 {
-  "name": "app",
+  "name": "know-how-computer",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
   "scripts": {
     "test": "gleam test",
+    "dev": "gleam run -m lustre/dev start",
     "build": "tsc"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "know how computer",
+    "wdr computer",
+    "paper computer",
+    "gleam"
+  ],
+  "author": "Martin Poelstra <martin@beryllium.net>",
   "license": "MIT",
   "dependencies": {
     "@codemirror/commands": "^6.6.0",
