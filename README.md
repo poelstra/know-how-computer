@@ -2,11 +2,14 @@
 
 Ever wanted to know how a computer really works?
 
-Go try out the [Know How Computer](https://en.wikipedia.org/wiki/WDR_paper_computer) (also called WDR Paper Computer)! It makes _you_ the computer, and gives you a better understanding of
-how a 'real' computer works.
+First, go try out the paper version of the [Know How Computer](https://en.wikipedia.org/wiki/WDR_paper_computer)
+(also called WDR Paper Computer)! It makes _you_ the computer, and gives you a better
+understanding of how a 'real' computer works.
 
 After a paper program or two, though, you'll probably get bored of the manual work.
-In that case, this online version of the Know How Computer is for you!
+In that case, my emulator is for you:
+
+[Know How Computer emulator](https://poelstra.github.io/know-how-computer/)
 
 See the [Examples](#examples) and [Challenges](#challenges) below to have a go yourself!
 
@@ -257,8 +260,8 @@ Some wild ideas in no particular order (and which I may never actually get to):
 
 - [x] Write some examples / challenges
 - [ ] Persist program and registers in local storage
-- [ ] Provide (statically) hosted version of this
-- [ ] Build the hosted version automatically from Github Actions
+- [x] Provide (statically) hosted version of this
+- [x] Build the hosted version automatically from Github Actions
 - [ ] Learn more Gleam & improve the code base with it
 - [ ] Add tab/view to show compiled output
 - [ ] Dutch translation
