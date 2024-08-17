@@ -1,0 +1,65 @@
+name: Deploy to GitHub Pages
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Gleam
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "26.0.2"
+          gleam-version: "1.4.1"
+          rebar3-version: "3"
+          # elixir-version: "1.15.4"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build app
+        run: |
+          npm ci
+          npm run build
+          gleam run -m lustre/dev build app --minify
+          cp -a build/dev/javascript/lustre_ui/priv/static/lustre-ui.css priv/static/lustre-ui.css
+          name="know_how_computer"
+          sed \
+            -e "s|/priv/static/${name}.mjs|/${name}.min.mjs|" \
+            -e "s|/priv/static/${name}.css|/${name}.min.css|" \
+            -e "s|/build/dev/javascript/lustre_ui/priv/static/lustre-ui.css|/lustre-ui.css|" \
+            < index.html > priv/static/index.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "priv/static"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
