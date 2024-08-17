@@ -93,12 +93,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let model = Model(..model, lines: lines, compile_errors: [])
       case compiler.compile(lines) {
         Ok(program) -> {
-          let prev_pc = model.rt |> runtime.get_pc
-          let rt_reset = model.rt |> runtime.set_program(program)
-          let rt = case rt_reset |> runtime.set_addr(prev_pc.at) {
-            Ok(rt) -> rt
-            Error(_) -> rt_reset
-          }
+          let rt = model.rt |> runtime.set_program(program)
           #(
             Model(
               ..model,
