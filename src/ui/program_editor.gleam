@@ -7,12 +7,13 @@ import gleam/list
 import gleam/option
 import lustre/attribute
 import lustre/element.{type Element}
+import lustre/element/html
 import ui/codemirror
 import ui/model.{type Model, Model}
 import ui/msg.{type Msg}
 
 pub fn view(model: Model) -> Element(Msg) {
-  let styles = [#("width", "100%")]
+  let styles = [#("width", "100%"), #("max-width", "50rem")]
   // let error_info = case model.compile_errors {
   //   [] -> None
   //   [error_info, ..] -> Some(error_info)
@@ -44,24 +45,25 @@ pub fn view(model: Model) -> Element(Msg) {
     //       <> compiler.compile_error_to_string(error_info.error)
     //   }),
     // ]),
-    codemirror.editor(
-      [
-        attribute.style(styles),
-        attribute.property(
-          "activeProgramLine",
-          json.nullable(active_source_line, of: json.int),
-        ),
-      ],
-      model.lines,
-      diagnostics,
-    )
-    |> element.map(fn(msg) {
-      case msg {
-        codemirror.ContentChanged(lines) -> msg.ProgramLinesChanged(lines)
-        codemirror.BreakpointsChanged(bps) -> msg.BreakpointsChanged(bps)
-        codemirror.SelectedLineChanged(line_no) ->
-          msg.SelectedLineChanged(line_no)
-      }
-    }),
+    html.div([attribute.style(styles)], [
+      codemirror.editor(
+        [
+          attribute.property(
+            "activeProgramLine",
+            json.nullable(active_source_line, of: json.int),
+          ),
+        ],
+        model.lines,
+        diagnostics,
+      )
+      |> element.map(fn(msg) {
+        case msg {
+          codemirror.ContentChanged(lines) -> msg.ProgramLinesChanged(lines)
+          codemirror.BreakpointsChanged(bps) -> msg.BreakpointsChanged(bps)
+          codemirror.SelectedLineChanged(line_no) ->
+            msg.SelectedLineChanged(line_no)
+        }
+      }),
+    ]),
   ])
 }

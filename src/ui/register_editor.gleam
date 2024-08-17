@@ -5,6 +5,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import lustre/attribute
 import lustre/element.{type Element}
+import lustre/element/html
 import ui/codemirror
 import ui/model.{type Model, Model}
 import ui/msg.{type Msg}
@@ -23,8 +24,8 @@ pub fn view(model: Model) -> Element(Msg) {
     }
   }
 
-  element.fragment([
-    codemirror.editor([attribute.style(styles)], lines, diagnostics)
+  html.div([attribute.style(styles)], [
+    codemirror.editor([], lines, diagnostics)
     |> element.map(fn(msg) {
       case msg {
         codemirror.ContentChanged(lines) -> msg.RegisterLinesChanged(lines)
