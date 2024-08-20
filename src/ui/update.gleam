@@ -120,7 +120,6 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           Model(
             ..model,
             rt: model.rt |> runtime.set_registers(regs),
-            history: model.history |> queue.push_front(model.rt),
             register_lines: None,
           ),
           effect.none(),
