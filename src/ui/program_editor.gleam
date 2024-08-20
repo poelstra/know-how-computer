@@ -4,7 +4,7 @@ import computer/runtime
 import computer/source_map
 import gleam/json
 import gleam/list
-import gleam/option
+import gleam/option.{type Option}
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
@@ -27,13 +27,16 @@ pub fn view(model: Model) -> Element(Msg) {
         severity: codemirror.ErrorSeverity,
       )
     })
-  let program_at = runtime.get_pc(model.rt).at
-  let active_source_line =
+
+  let sm =
     model.rt
     |> runtime.get_program
     |> program.get_source_map
-    |> source_map.get_source_line(program_at)
-    |> option.from_result
+  let active_lines =
+    model.rt
+    |> runtime.get_pc_history
+    |> list.map(try_get_source_line(sm, _))
+    |> option.values
   element.fragment([
     // html.div([], [
     //   html.text(case error_info {
@@ -49,8 +52,8 @@ pub fn view(model: Model) -> Element(Msg) {
       codemirror.editor(
         [
           attribute.property(
-            "activeProgramLine",
-            json.nullable(active_source_line, of: json.int),
+            "activeProgramLines",
+            json.array(active_lines, of: json.int),
           ),
         ],
         model.lines,
@@ -66,4 +69,10 @@ pub fn view(model: Model) -> Element(Msg) {
       }),
     ]),
   ])
+}
+
+fn try_get_source_line(sm: source_map.SourceMap, addr: Int) -> Option(Int) {
+  sm
+  |> source_map.get_source_line(addr)
+  |> option.from_result
 }

@@ -1,8 +1,10 @@
 import computer/instruction.{type Instruction}
 import computer/program.{type Program}
 import computer/registers.{type Registers}
+import computer/source_map
 import gleam/int
 import gleam/list
+import gleam/result
 
 pub opaque type Runtime {
   Runtime(
@@ -10,6 +12,7 @@ pub opaque type Runtime {
     initial_registers: Registers,
     registers: Registers,
     pc: ProgramCounter,
+    pc_history: List(Int),
   )
 }
 
@@ -34,7 +37,7 @@ pub type RuntimeError {
 }
 
 pub fn new(program: Program, registers: Registers) -> Runtime {
-  Runtime(program, registers, registers, pc: Reset(1))
+  Runtime(program, registers, registers, pc: Reset(1), pc_history: [])
 }
 
 pub fn reset(rt: Runtime) -> Runtime {
@@ -53,11 +56,24 @@ fn set_crashed(rt: Runtime, error: RuntimeError) -> Runtime {
 }
 
 fn set_pc(rt: Runtime, pc: ProgramCounter) -> Runtime {
-  Runtime(..rt, pc: pc)
+  let history = case pc {
+    Running(_) ->
+      case rt.pc_history {
+        [a, b, ..] -> [rt.pc.at, a, b]
+        _ -> [rt.pc.at, ..rt.pc_history]
+      }
+    Paused(_) | Stopped(_) | Crashed(..) -> rt.pc_history
+    _ -> []
+  }
+  Runtime(..rt, pc: pc, pc_history: history)
 }
 
 pub fn get_pc(rt: Runtime) -> ProgramCounter {
   rt.pc
+}
+
+pub fn get_pc_history(rt: Runtime) -> List(Int) {
+  [rt.pc.at, ..rt.pc_history]
 }
 
 pub fn get_registers(rt: Runtime) -> Registers {

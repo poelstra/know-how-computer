@@ -1,21 +1,21 @@
-import {
-  linter,
-  Diagnostic,
-  setDiagnostics,
-  lintGutter,
-} from "@codemirror/lint";
 import { indentWithTab } from "@codemirror/commands";
-import { Text, RangeSet, Extension } from "@codemirror/state";
-import { EditorView, ViewUpdate, keymap } from "@codemirror/view";
-import { basicSetup } from "codemirror";
-import { EditorState, StateField, StateEffect } from "@codemirror/state";
+import { Diagnostic, linter, setDiagnostics } from "@codemirror/lint";
+import {
+  Extension,
+  RangeSet,
+  StateEffect,
+  StateField,
+  Text,
+} from "@codemirror/state";
 import {
   Decoration,
   DecorationSet,
-  ViewPlugin,
-  gutter,
+  EditorView,
   GutterMarker,
+  gutter,
+  keymap,
 } from "@codemirror/view";
+import { basicSetup } from "codemirror";
 
 // === Breakpoints ===
 
@@ -104,15 +104,13 @@ function getBreakpointLines(
 
 // === Active Program Line ===
 
-const activeProgramLineDeco = Decoration.line({
-  attributes: { class: "cm-activeProgramLine" },
-});
+const activeProgramLineDecos = ["h0", "h1", "h2", "h3"].map((history) =>
+  Decoration.line({
+    attributes: { class: `cm-activeProgramLine ${history}` },
+  })
+);
 
-function activeProgramLineDecoSet(view: EditorView): DecorationSet {
-  return view.state.field(activeProgramLineField);
-}
-
-const setActiveProgramLine = StateEffect.define<number | undefined>();
+const setActiveProgramLine = StateEffect.define<number[] | undefined>();
 
 const activeProgramLineField = StateField.define<DecorationSet>({
   create() {
@@ -125,8 +123,11 @@ const activeProgramLineField = StateField.define<DecorationSet>({
         if (effect.value === undefined) {
           deco = Decoration.none;
         } else {
-          const line = transaction.state.doc.line(effect.value);
-          deco = Decoration.set([activeProgramLineDeco.range(line.from)]);
+          const decos = effect.value.map((line_no, idx) => {
+            const line = transaction.state.doc.line(line_no);
+            return activeProgramLineDecos[idx].range(line.from);
+          });
+          deco = Decoration.set(decos, true);
         }
       }
     }
@@ -135,9 +136,27 @@ const activeProgramLineField = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 });
 
+const activeLineColors = {
+  ".cm-activeProgramLine.h0": { backgroundColor: "#ffff00d0" },
+  ".cm-activeProgramLine.h1": { backgroundColor: "#ffff0040" },
+  ".cm-activeProgramLine.h2": { backgroundColor: "#ffff0028" },
+  ".cm-activeProgramLine.h3": { backgroundColor: "#ffff0010" },
+};
+const activeLineLightTheme = Object.fromEntries(
+  Object.entries(activeLineColors).map(([key, value]) => [
+    `&light ${key}`,
+    value,
+  ])
+);
+const activeLineDarkTheme = Object.fromEntries(
+  Object.entries(activeLineColors).map(([key, value]) => [
+    `&dark ${key}`,
+    value,
+  ])
+);
 const activeProgramLineTheme = EditorView.baseTheme({
-  "&light .cm-activeProgramLine": { backgroundColor: "yellow" },
-  "&dark .cm-activeProgramLine": { backgroundColor: "yellow" },
+  ...activeLineLightTheme,
+  ...activeLineDarkTheme,
 });
 
 const activeProgramLine: Extension = [
@@ -158,8 +177,10 @@ export class CodeMirror extends HTMLElement {
     this._setContent(newValue);
   }
 
-  set activeProgramLine(line_no: number | undefined) {
-    this.editor.dispatch({ effects: setActiveProgramLine.of(line_no) });
+  set activeProgramLines(line_nos: number[] | undefined) {
+    this.editor.dispatch({
+      effects: setActiveProgramLine.of(line_nos),
+    });
   }
 
   set diagnostics(diagnostics: Diagnostic[]) {
