@@ -154,7 +154,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 }
 
 fn do_run(model: Model) -> #(Model, Effect(Msg)) {
-  let rt = model.rt |> runtime.run(100, model.breakpoints)
+  let rt = model.rt |> runtime.run(1000, model.breakpoints)
   case rt |> runtime.get_pc {
     // Iterations exceeded, keep running on next tick
     runtime.Running(_) -> #(Model(..model, rt: rt), next_tick(msg.AutoRun))
