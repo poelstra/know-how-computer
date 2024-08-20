@@ -116,14 +116,23 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         |> list.try_map(int.parse)
         |> result.map(registers.from_list)
       {
-        Ok(regs) -> #(
-          Model(
-            ..model,
-            rt: model.rt |> runtime.set_registers(regs),
-            register_lines: None,
-          ),
-          effect.none(),
-        )
+        Ok(regs) -> {
+          // In case the program is completed, first reset it implicitly,
+          // because otherwise the user can only press Reset first,
+          // which will also revert the register change just made...
+          let rt = case model.rt |> runtime.get_pc {
+            runtime.Stopped(_) -> model.rt |> runtime.reset
+            _ -> model.rt
+          }
+          #(
+            Model(
+              ..model,
+              rt: rt |> runtime.set_registers(regs),
+              register_lines: None,
+            ),
+            effect.none(),
+          )
+        }
         Error(_) -> #(
           Model(..model, register_lines: Some(lines)),
           effect.none(),
