@@ -40,7 +40,7 @@ the line number. Pressing Run will then run as far as it can until it either hit
 The Know How Computer supports the following instructions:
 
 - `inc <register>`: Add 1 to the contents of the given register.
-- `dec <register>`: Subtract 1 to the contents of the given register.
+- `dec <register>`: Subtract 1 from the contents of the given register.
 - `jmp <address>`: Jump to the instruction at the given address (line number).
 - `isz <register>`: Check whether the given register is zero. If it is, skip the next instruction, otherwise just continue.
 - `stp`: Halt the program (i.e. stop further running).
@@ -100,10 +100,10 @@ in the first register (in the top editor), then press the Step button until the 
 reaches the end ("Stopped at ..."). Click the Reset button to start over.
 
 ```assembly
-dec 1 // Decrement register 1
-isz 1 // Is register 1 zero?
-jmp 1 //   -> no: go to line 1
-stp   //   -> yes: done
+dec 1   // Decrement register 1
+isz 1   // Is register 1 zero?
+jmp 1   //   -> no: go to line 1
+stp     //   -> yes: done
 ```
 
 Note: this version of the program has a bug, see the [Loophole challenge](#loophole) below
@@ -113,6 +113,18 @@ to crack it!
 
 The following example builds on the concept of the previous one,
 but this time, the contents of register 2 are added to register 1.
+
+```assembly
+jmp 4   // Jump to line 6 (`isz 2`)
+inc 1   // Increment register 1
+dec 2   // Decrement register 2
+isz 2   // Is register 2 zero?
+jmp 2   //   -> no: go to line 2
+stp     //   -> yes: done
+```
+
+If you add or remove lines above, you'll need to re-adjust the `jmp`
+addresses. Use labels to let the compiler figure out the numbers for you:
 
 ```assembly
 jmp compare   // Jump to line 6 (`isz 2`)
@@ -139,7 +151,7 @@ Can you fix it?
 
 <details>
 <summary>Hint 1</summary>
-You can fix it by adding a single instruction.
+You can fix it by inserting a single instruction (and updating the `jmp` at the end).
 </details>
 
 <details>

@@ -96,6 +96,6 @@ fn fmt_pc(rt: runtime.Runtime) -> String {
     runtime.Paused(_) -> "Paused " <> line_text
     runtime.Stopped(_) -> "Stopped " <> line_text
     runtime.Crashed(_, err) ->
-      "Crashed at " <> line_text <> ": " <> runtime.runtime_error_to_string(err)
+      "Crashed " <> line_text <> ": " <> runtime.runtime_error_to_string(err)
   }
 }
