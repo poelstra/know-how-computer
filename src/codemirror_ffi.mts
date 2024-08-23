@@ -123,10 +123,20 @@ const activeProgramLineField = StateField.define<DecorationSet>({
         if (effect.value === undefined) {
           deco = Decoration.none;
         } else {
-          const decos = effect.value.map((line_no, idx) => {
-            const line = transaction.state.doc.line(line_no);
-            return activeProgramLineDecos[idx].range(line.from);
-          });
+          const dups = new Set<number>();
+          const decos = effect.value
+            .map((line_no, idx) => [line_no, idx])
+            .filter(([line_no]) => {
+              if (dups.has(line_no)) {
+                return false;
+              }
+              dups.add(line_no);
+              return true;
+            })
+            .map(([line_no, idx]) => {
+              const line = transaction.state.doc.line(line_no);
+              return activeProgramLineDecos[idx].range(line.from);
+            });
           deco = Decoration.set(decos, true);
         }
       }
