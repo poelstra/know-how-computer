@@ -276,6 +276,8 @@ Some wild ideas in no particular order (and which I may never actually get to):
 - [x] Build the hosted version automatically from Github Actions
 - [ ] Learn more Gleam & improve the code base with it
 - [ ] Add tab/view to show compiled output
+- [ ] Slow-mo mode
+- [ ] Visualize changed registers
 - [x] Visualize 'history' by having a trace of shaded line markers
 - [ ] Dutch translation
 - [ ] Gradually add more advanced concepts (stack, memory, more advanced instructions, basic I/O)
